@@ -9,17 +9,20 @@ var fir
 
 
 //Recursion to traverse tree
-function search(valElement,pip)//Input is array of activities
+function search(valElement,retPip)//Input is array of activities
                         //pip is pipeline to be found
                         //obj is array containing activities
 {
+
+    var res1=[]; // When found
+    var res2=[];
+    var res3=[];
+    var res4=[];
+    var result=[];
     if(valElement== null||valElement== undefined||valElement.properties==null||valElement.properties== undefined||valElement.properties.activities==null||valElement.properties.activities==undefined)
-    return false;
+    return [];
 
     var obj = valElement.properties.activities    
-    var res1=false;
-    var res2=false;
-    var res3=false;
     // var res4=false;
    
     for (var k in obj)
@@ -27,15 +30,16 @@ function search(valElement,pip)//Input is array of activities
         if(obj[k]== null||obj[k]== undefined)
         {
             //  console.log("NULLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLL")
-            return false;
+            return [];
         }
-        if(obj[k].hasOwnProperty('type') && obj[k].type=='ExecutePipeline' && obj[k].typeProperties.pipeline.referenceName==pip)
+        if(obj[k].hasOwnProperty('type') && obj[k].type=='ExecutePipeline' && obj[k].typeProperties.pipeline.referenceName==retPip)
         {
             console.log("FOUNDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDD")
             // console.log("------------------------------------------------------------------------")
             console.log("Parent Pipeline: "+valElement.name)
             // console.log("------------------------------------------------------------------------")
-            return true;
+            res1.push(valElement.name)
+            return(res1);
         }
         
         if(obj[k].hasOwnProperty('typeProperties'))
@@ -46,17 +50,19 @@ function search(valElement,pip)//Input is array of activities
                 for (var c in cas)
                 {
                     if((cas[c].hasOwnProperty('activities')))
-                    res1=res1||search(cas[c].activities,pip);
+                    res2=res2.concat(search(cas[c].activities,retPip));
+                    // arr1 = arr1.concat(arr2);
                 }
             }
             if ((obj[k].typeProperties.hasOwnProperty('activities')))
             {  
                 // console.log("FOR EACHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHH")
-                res2=res2||search(obj[k].typeProperties.activities,pip);
+                res3=res3.concat(search(obj[k].typeProperties.activities,retPip));
             }
         }
         if (((obj[k].hasOwnProperty('properties'))&&(obj[k].properties.hasOwnProperty('activities'))))
-        { res3=res3||search(obj[k].properties.activities,pip);
+        {
+             res4=res4.concat(search(obj[k].properties.activities,retPip));
         }
             
                     
@@ -69,7 +75,8 @@ function search(valElement,pip)//Input is array of activities
     //                 console.log(obj[k].typeProperties.pipeline.referenceName)
     // console.log(obj[k].name)
     // console.log("ENDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDD")
-    return (res1||res2||res3);
+    result = result.concat(res1).concat(res2).concat(res3).concat(res4);
+    return(result);
 
            
         
@@ -77,26 +84,59 @@ function search(valElement,pip)//Input is array of activities
 }
 
 
+var temp=[];
+// var retPip='PL_DATA_PROCESS_REQUEST_ENRICH'
+var retPip='PL_CIF_LOG'
+var first_global_search = (recForLoop(val,0,retPip))// One Global Search
+console.log(first_global_search)
+console.log(first_global_search.length)
+for(var k in first_global_search)
+{
+    console.log(k+"th run")
+    temp=temp.concat(recForLoop(val,0,first_global_search[k]));
+}
+console.log(temp)
 
-var pipe='PL_DATA_PROCESS_REQUEST'
+function recSearchtillGF(val,i,retPip)
+{
+    if(recForLoop(val,0,retPip)==[])
+    {
+        return [];
+    }
+    return(recSearchtillGF(val,i,))
+}
 
-function recForLoop(valfr,j) //To traverse each pipeline at val level
-{   
+function global_search()
+
+//equals a single search
+// console.log(search(val[0],retPip))
+// console.log(search(val[1],retPip))
+// var tp=[];
+// tp=tp.concat(search(val[1],retPip)).concat(search(val[0],retPip))
+// console.log(tp)
+// var pipe=['PL_DATA_PROCESS_REQUEST']
+
+function recForLoop(valfr,j,retPip) //To traverse each pipeline at val level
+{   var result_loop=[];
+    var arr_res_vert = [];
+    var arr_res_hor = [];
     if(valfr==null||valfr==undefined||j>=valfr.length)
     {
-        return;
+        return [];
     }
     // console.log("------------------------------------------------------------------------")
     // console.log("Parent Pipelines: "+valfr[j].name)
     // console.log("------------------------------------------------------------------------")
-    search(valfr[j],pipe)
-    recForLoop(valfr,++j)
+    arr_res_vert=arr_res_vert.concat(search(valfr[j],retPip)); //search work
+    arr_res_hor = arr_res_hor.concat(recForLoop(valfr,++j,retPip));
+    result_loop = result_loop.concat(arr_res_hor).concat(arr_res_vert);
+    return(result_loop);
    
 
 }
 
-recForLoop(val,0) //equals a single search
-console.log(val.length)
+
+// console.log(val.length)
 /* One recursion for for loop to call recursion on each element of array
 Other recursion for traversing children/hierarchy
 One global parameter to store value of highest parent pipeline. Will be updated whenever if(name==pip)condition is true
